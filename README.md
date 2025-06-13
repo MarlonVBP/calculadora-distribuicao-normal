@@ -1,0 +1,1 @@
+# calculadora-distribuicao-normal
