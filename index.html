@@ -1,13 +1,68 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <link rel="stylesheet" href="assets/css/style.css">
- <title>Distribuição Normal</title>
-</head>
-<body>
- <h1>Hello World!!!</h1>
-</body>
-<script src="assets/js/script.js"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <title>Distribuição Normal</title>
+  </head>
+  <body>
+    <header>Calculadora de Distribuição Normal</header>
+    <main>
+      <section class="form-section">
+        <form>
+          <div class="input-container">
+            <label for="media">Média (μ)</label>
+            <input type="number" id="media" placeholder="Média (μ)" required />
+          </div>
+          <div class="input-container">
+            <label for="desvio">Desvio Padrão (σ)</label>
+            <input
+              type="number"
+              id="desvio"
+              placeholder="Desvio Padrão (σ)"
+              required
+            />
+          </div>
+          <div class="input-container">
+            <label for="valor">Valor (x) - menor valor</label>
+            <input type="number" id="valor" placeholder="Valor (x)" required />
+          </div>
+          <div class="input-container">
+            <label for="valor2">Valor (x2) - maior valor</label>
+            <input
+              type="number"
+              id="valor2"
+              placeholder="Valor (x2)"
+              required
+            />
+          </div>
+          <div class="input-container">
+            <label for="tipoPergunta">Tipo de Pergunta:</label>
+            <select id="tipoPergunta">
+              <option value="menorQue">P(X &lsaquo; x)</option>
+              <option value="maiorQue">P(X &rsaquo; x)</option>
+              <option value="entre">P(x1 &lsaquo; X &lsaquo; x2)</option>
+            </select>
+          </div>
+          <div class="button-container">
+            <button type="button" id="calcular">Calcular</button>
+            <button type="reset">Limpar</button>
+          </div>
+        </form>
+      </section>
+      <section class="result-section">
+        <div class="result-container">
+          <h2>Resultado</h2>
+          <p id="resultado"></p>
+          <div class="chart-container">
+            <h3>Gráfico da Distribuição Normal</h3>
+            <canvas id="normalDistributionChart"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+  <script src="assets/js/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </html>
