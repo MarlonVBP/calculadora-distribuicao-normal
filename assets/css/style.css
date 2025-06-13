@@ -3,3 +3,109 @@
   margin: 0;
   padding: 0;
 }
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+}
+header {
+  background-color: #35424a;
+  color: #ffffff;
+  padding: 10px 0;
+  text-align: center;
+}
+main {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+}
+
+section {
+  flex: 1;
+  margin: 0 10px;
+}
+
+.form-section,
+.result-section {
+  background-color: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  padding: 20px;
+}
+.input-container {
+  margin-bottom: 15px;
+}
+.input-container label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+.input-container input[type="number"],
+.input-container select {
+  border: 1px solid #dddddd;
+  border-radius: 4px;
+  padding: 8px;
+  width: 100%;
+}
+.button-container {
+  display: flex;
+  justify-content: space-between;
+}
+.button-container button {
+  background-color: #35424a;
+  border: none;
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 10px 15px;
+}
+.button-container button:hover {
+  background-color: #45a049;
+}
+.result-container {
+  background-color: #f9f9f9;
+  border: 1px solid #dddddd;
+  border-radius: 5px;
+  padding: 15px;
+}
+
+@media (max-width: 1200px) {
+  main {
+    flex-direction: column;
+  }
+  section {
+    margin: 10px 0;
+  }
+}
+
+/* No seu style.css */
+
+.chart-container {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #444;
+  position: relative; /* FUNDAMENTAL para a responsividade do Chart.js */
+  width: 100%;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  /* Adicione uma altura ou altura máxima aqui */
+  height: 300px; /* Exemplo: altura fixa */
+  /* Ou, para uma altura responsiva baseada na viewport, mas com limite: */
+  /* max-height: 40vh; */ /* 40% da altura da viewport */
+}
+
+canvas {
+  /* O canvas deve ter 100% de largura e altura do seu contêiner pai */
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-container h3 {
+  margin-top: 0;
+  color: #000000;
+  margin-bottom: 15px;
+}
