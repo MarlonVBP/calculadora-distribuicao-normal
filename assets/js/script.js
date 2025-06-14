@@ -101,8 +101,8 @@ function apresentarResultado(probabilidade, dados) {
   }
 
   resultadoP.textContent = `A probabilidade ${textoPergunta} é de ${(
-    probabilidade * 100
-  ).toFixed(4)}%`;
+    probabilidade
+  ).toFixed(4)}`;
 }
 
 // 4. Funções de Cálculo Estatístico
@@ -238,7 +238,7 @@ function desenharGrafico(
   });
   if (areaSombreada.length > 0) {
     datasets.push({
-      label: `Área = ${(probabilidade * 100).toFixed(4)}%`,
+      label: `Área = ${(probabilidade).toFixed(4)}`,
       data: areaSombreada,
       backgroundColor: "rgba(255, 99, 132, 0.5)",
       borderColor: "rgba(255, 99, 132, 1)",
