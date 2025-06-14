@@ -1,338 +1,275 @@
-const media = document.getElementById("media");
-const desvioPadrao = document.getElementById("desvio");
-const valor = document.getElementById("valor");
-const tipoPergunta = document.getElementById("tipoPergunta");
-const resultado = document.getElementById("resultado");
-let myChart;
-var resultadoValue = 0;
+/**
+ * @file script.js
+ * @description Lógica para a Calculadora de Distribuição Normal, incluindo cálculos e renderização de gráfico.
+ * @author Marlon Passos
+ */
+
+// 1. Seletores de Elementos DOM e Variáveis Globais
+
+const mediaInput = document.getElementById("media");
+const desvioInput = document.getElementById("desvio");
+const valor1Input = document.getElementById("valor");
+const valor2Input = document.getElementById("valor2");
+const tipoPerguntaSelect = document.getElementById("tipoPergunta");
+const valor2Container = document.getElementById("valor2-container");
+const calcularBtn = document.getElementById("calcular");
+const limparBtn = document.getElementById("limpar");
+const resultadoP = document.getElementById("resultado");
+const chartCanvas = document.getElementById("normalDistributionChart");
+
+let normalChart;
+
+// 2. Manipuladores de Eventos (Event Handlers)
 
 document.addEventListener("DOMContentLoaded", () => {
-  const initialMean = parseFloat(media.value);
-  const initialStdDev = parseFloat(desvioPadrao.value);
+  desenharGrafico(0, 1);
 
-  if (!isNaN(initialMean) && !isNaN(initialStdDev) && initialStdDev > 0) {
-    desenharGrafico(initialMean, initialStdDev);
-  } else {
-    desenharGrafico(0, 1);
-  }
-
-  document.getElementById("calcular").addEventListener("click", () => {
-    calcularDistribuicaoNormal();
-  });
+  calcularBtn.addEventListener("click", executarCalculo);
+  tipoPerguntaSelect.addEventListener("change", gerenciarVisibilidadeValor2);
+  limparBtn.addEventListener("click", limparFormulario);
 });
 
-function calcularDistribuicaoNormal() {
-  const mediaValue = parseFloat(media.value);
-  const desvioPadraoValue = parseFloat(desvioPadrao.value);
-  const valorValue = parseFloat(valor.value);
-  const tipoPerguntaValue = tipoPergunta.value;
-
-  if (isNaN(mediaValue) || isNaN(desvioPadraoValue) || desvioPadraoValue <= 0) {
-    resultado.innerHTML =
-      "Por favor, preencha todos os campos corretamente e o Desvio Padrão deve ser maior que zero.";
-    return;
-  }
-
-  if (tipoPerguntaValue === "menorQue") {
-    resultadoValue = calcularMenor(mediaValue, desvioPadraoValue, valorValue);
-  } else if (tipoPerguntaValue === "maiorQue") {
-    resultadoValue = calcularMaior(mediaValue, desvioPadraoValue, valorValue);
-  } else if (tipoPerguntaValue === "entre") {
-    const valor2Input = document.getElementById("valor2");
-    if (!valor2Input) {
-      resultado.textContent =
-        "Erro: Campo para o segundo valor (X2) não encontrado.";
-      return;
-    }
-    const valor2Value = parseFloat(valor2Input.value);
-    if (isNaN(valor2Value)) {
-      resultado.textContent =
-        "Por favor, preencha o segundo valor corretamente.";
-      return;
-    }
-    resultadoValue = calcularEntre(
-      mediaValue,
-      desvioPadraoValue,
-      valorValue,
-      valor2Value
-    );
+function gerenciarVisibilidadeValor2() {
+  if (tipoPerguntaSelect.value === "entre") {
+    valor2Container.style.display = "block";
   } else {
-    resultado.textContent = "Selecione um tipo de pergunta válido.";
+    valor2Container.style.display = "none";
+  }
+}
+
+function limparFormulario() {
+  resultadoP.textContent = "Insira os valores e clique em 'Calcular'.";
+  valor2Container.style.display = "none";
+  desenharGrafico(0, 1);
+}
+
+// 3. Lógica Principal de Cálculo
+
+function executarCalculo() {
+  const media = parseFloat(mediaInput.value);
+  const desvio = parseFloat(desvioInput.value);
+  const valor1 = parseFloat(valor1Input.value);
+  const tipo = tipoPerguntaSelect.value;
+
+  if (isNaN(media) || isNaN(desvio) || isNaN(valor1)) {
+    resultadoP.textContent =
+      "Erro: Por favor, preencha todos os campos numéricos.";
+    return;
+  }
+  if (desvio <= 0) {
+    resultadoP.textContent = "Erro: O Desvio Padrão deve ser maior que zero.";
     return;
   }
 
-  let textoPergunta = "";
-  let valor2ForGraph = null;
-  if (tipoPerguntaValue === "menorQue") {
-    textoPergunta = `P(X < ${valorValue})`;
-  } else if (tipoPerguntaValue === "maiorQue") {
-    textoPergunta = `P(X > ${valorValue})`;
-  } else if (tipoPerguntaValue === "entre") {
-    const valor2Value = parseFloat(document.getElementById("valor2").value);
-    textoPergunta = `P(${Math.min(valorValue, valor2Value)} < X < ${Math.max(
-      valor2Value,
-      valorValue
-    )})`;
-    valor2ForGraph = valor2Value;
+  let probabilidade = 0;
+  let valor2 = NaN;
+
+  if (tipo === "entre") {
+    valor2 = parseFloat(valor2Input.value);
+    if (isNaN(valor2)) {
+      resultadoP.textContent =
+        "Erro: Por favor, preencha o segundo valor (x2).";
+      return;
+    }
+    probabilidade = calcularEntre(media, desvio, valor1, valor2);
+  } else if (tipo === "menorQue") {
+    probabilidade = calcularMenor(media, desvio, valor1);
+  } else if (tipo === "maiorQue") {
+    probabilidade = calcularMaior(media, desvio, valor1);
   }
 
-  resultado.textContent = `Resultado: ${textoPergunta} é: ${resultadoValue.toFixed(
-    4
-  )}`;
+  apresentarResultado(probabilidade, { media, desvio, valor1, valor2, tipo });
+  desenharGrafico(media, desvio, tipo, valor1, valor2, probabilidade);
+}
 
-  desenharGrafico(
-    mediaValue,
-    desvioPadraoValue,
-    tipoPerguntaValue,
-    valorValue,
-    valor2ForGraph
+function apresentarResultado(probabilidade, dados) {
+  let textoPergunta = "";
+  const { valor1, valor2, tipo } = dados;
+
+  switch (tipo) {
+    case "menorQue":
+      textoPergunta = `P(X < ${valor1})`;
+      break;
+    case "maiorQue":
+      textoPergunta = `P(X > ${valor1})`;
+      break;
+    case "entre":
+      const vMin = Math.min(valor1, valor2);
+      const vMax = Math.max(valor1, valor2);
+      textoPergunta = `P(${vMin} < X < ${vMax})`;
+      break;
+  }
+
+  resultadoP.textContent = `A probabilidade ${textoPergunta} é de ${(
+    probabilidade * 100
+  ).toFixed(4)}%`;
+}
+
+// 4. Funções de Cálculo Estatístico
+
+function calcularMenor(media, desvio, valor) {
+  const z = (valor - media) / desvio;
+  return cdf(z);
+}
+
+function calcularMaior(media, desvio, valor) {
+  return 1 - calcularMenor(media, desvio, valor);
+}
+
+function calcularEntre(media, desvio, valor1, valor2) {
+  const vMin = Math.min(valor1, valor2);
+  const vMax = Math.max(valor1, valor2);
+  return (
+    calcularMenor(media, desvio, vMax) - calcularMenor(media, desvio, vMin)
   );
 }
 
-function calcularMenor(media, desvioPadrao, valor) {
-  const z = (valor - media) / desvioPadrao;
-  return normalCumulativeDistribution(z);
-}
-
-function calcularMaior(media, desvioPadrao, valor) {
-  const z = (valor - media) / desvioPadrao;
-  return 1 - normalCumulativeDistribution(z);
-}
-
-function calcularEntre(media, desvioPadrao, valor1, valor2) {
-  const z1 = (valor1 - media) / desvioPadrao;
-  const z2 = (valor2 - media) / desvioPadrao;
-  return normalCumulativeDistribution(z2) - normalCumulativeDistribution(z1);
-}
-
-function normalCumulativeDistribution(z) {
-  if (z < 0) {
-    return 0.5 * (1 + erf(z / Math.sqrt(2)));
-  } else {
-    return 0.5 * (1 - erf(-z / Math.sqrt(2)));
-  }
+function cdf(z) {
+  return 0.5 * (1 + erf(z / Math.sqrt(2)));
 }
 
 function erf(x) {
-  const a1 = 0.254829592;
-  const a2 = -0.284496736;
-  const a3 = 1.421413741;
-  const a4 = -1.453152027;
-  const a5 = 1.061405429;
-  const p = 0.3275911;
+  const a1 = 0.254829592,
+    a2 = -0.284496736,
+    a3 = 1.421413741;
+  const a4 = -1.453152027,
+    a5 = 1.061405429,
+    p = 0.3275911;
 
   const sign = x < 0 ? -1 : 1;
-  x = Math.abs(x);
+  const absX = Math.abs(x);
 
-  const t = 1 / (1 + p * x);
+  const t = 1.0 / (1.0 + p * absX);
   const y =
-    ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+    1.0 -
+    ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
 
-  return sign * (1 - y);
+  return sign * y;
 }
 
-function normalPdf(x, mean, stdDev) {
-  const exponent = -0.5 * Math.pow((x - mean) / stdDev, 2);
-  const coefficient = 1 / (stdDev * Math.sqrt(2 * Math.PI));
+function pdf(x, media, desvio) {
+  const exponent = -0.5 * Math.pow((x - media) / desvio, 2);
+  const coefficient = 1 / (desvio * Math.sqrt(2 * Math.PI));
   return coefficient * Math.exp(exponent);
 }
 
-function gerarPontosCurva(mean, stdDev, numPoints = 200) {
-  const points = [];
-  const minX = mean - 4 * stdDev;
-  const maxX = mean + 4 * stdDev;
-  const step = (maxX - minX) / (numPoints - 1);
+// 5. Funções de Geração e Desenho do Gráfico
 
-  for (let i = 0; i < numPoints; i++) {
-    const x = minX + i * step;
-    const y = normalPdf(x, mean, stdDev);
-    points.push({ x: x, y: y });
+function gerarPontosCurva(media, desvio) {
+  const pontos = [];
+
+  const minX = media - 4 * desvio;
+  const maxX = media + 4 * desvio;
+  const step = (maxX - minX) / 200;
+
+  for (let x = minX; x <= maxX; x += step) {
+    pontos.push({ x, y: pdf(x, media, desvio) });
   }
-  return points;
+  return pontos;
 }
 
-function getShadedAreaPoints(allPoints, mean, stdDev, type, val1, val2 = null) {
-  let shadedPoints = [];
-  let minXBoundary, maxXBoundary;
+function gerarAreaSombreada(pontosCurva, dados) {
+  const { media, desvio, valor1, valor2, tipo } = dados;
+  if (!tipo || valor1 === null) return [];
 
-  switch (type) {
+  let lim_inf, lim_sup;
+  switch (tipo) {
     case "menorQue":
-      minXBoundary = allPoints[0].x;
-      maxXBoundary = val1;
+      lim_inf = pontosCurva[0].x;
+      lim_sup = valor1;
       break;
     case "maiorQue":
-      minXBoundary = val1;
-      maxXBoundary = allPoints[allPoints.length - 1].x;
+      lim_inf = valor1;
+      lim_sup = pontosCurva[pontosCurva.length - 1].x;
       break;
     case "entre":
-      minXBoundary = Math.min(val1, val2);
-      maxXBoundary = Math.max(val1, val2);
+      lim_inf = Math.min(valor1, valor2);
+      lim_sup = Math.max(valor1, valor2);
       break;
     default:
       return [];
   }
 
-  if (
-    minXBoundary > allPoints[0].x &&
-    minXBoundary < allPoints[allPoints.length - 1].x
-  ) {
-    shadedPoints.push({
-      x: minXBoundary,
-      y: normalPdf(minXBoundary, mean, stdDev),
-    });
+  const areaSombreada = pontosCurva.filter(
+    (p) => p.x >= lim_inf && p.x <= lim_sup
+  );
+
+  if (areaSombreada.length > 0) {
+    areaSombreada.unshift({ x: areaSombreada[0].x, y: 0 });
+    areaSombreada.push({ x: areaSombreada[areaSombreada.length - 1].x, y: 0 });
   }
 
-  allPoints.forEach((p) => {
-    if (p.x >= minXBoundary && p.x <= maxXBoundary) {
-      shadedPoints.push(p);
-    }
-  });
-
-  if (
-    maxXBoundary < allPoints[allPoints.length - 1].x &&
-    maxXBoundary > allPoints[0].x
-  ) {
-    const lastShadedX =
-      shadedPoints.length > 0 ? shadedPoints[shadedPoints.length - 1].x : null;
-    if (lastShadedX !== maxXBoundary) {
-      shadedPoints.push({
-        x: maxXBoundary,
-        y: normalPdf(maxXBoundary, mean, stdDev),
-      });
-    }
-  }
-
-  shadedPoints.sort((a, b) => a.x - b.x);
-
-  if (shadedPoints.length > 0) {
-    shadedPoints.unshift({ x: shadedPoints[0].x, y: 0 });
-    shadedPoints.push({ x: shadedPoints[shadedPoints.length - 1].x, y: 0 });
-  }
-
-  return shadedPoints;
+  return areaSombreada;
 }
 
 function desenharGrafico(
-  mean,
-  stdDev,
-  tipoPerguntaValue = null,
-  valorValue = null,
-  valor2Value = null
+  media,
+  desvio,
+  tipo = null,
+  valor1 = null,
+  valor2 = null,
+  probabilidade = null
 ) {
-  const ctx = document
-    .getElementById("normalDistributionChart")
-    .getContext("2d");
+  const ctx = chartCanvas.getContext("2d");
 
-  if (myChart) {
-    myChart.destroy();
+  if (normalChart) {
+    normalChart.destroy();
   }
 
-  const allDataPoints = gerarPontosCurva(mean, stdDev);
-
+  const pontosCurva = gerarPontosCurva(media, desvio);
   const datasets = [
     {
-      label: `(μ=${mean}, σ=${stdDev})`,
-      data: allDataPoints,
-      borderColor: "#000000",
-      backgroundColor: "rgba(0, 0, 0, 0)",
-      fill: false,
-      tension: 0.4,
-      pointRadius: 0,
+      label: `Curva Normal (μ=${media}, σ=${desvio})`,
+      data: pontosCurva,
+      borderColor: "black",
       borderWidth: 2,
+      fill: false,
+      pointRadius: 0,
+      tension: 0.1,
     },
   ];
 
-  if (
-    tipoPerguntaValue &&
-    valorValue !== null &&
-    mean !== null &&
-    stdDev !== null &&
-    stdDev > 0
-  ) {
-    const shadedPoints = getShadedAreaPoints(
-      allDataPoints,
-      mean,
-      stdDev,
-      tipoPerguntaValue,
-      valorValue,
-      valor2Value
-    );
-
-    if (shadedPoints.length > 0) {
-      datasets.push({
-        label: `Área Sombreada (${ resultadoValue.toFixed(4) })`,
-        data: shadedPoints,
-        borderColor: "red",
-        backgroundColor: "rgba(255, 0, 0, 0.7)",
-        fill: "origin",
-        tension: 0.4,
-        pointRadius: 0,
-        borderWidth: 1,
-      });
-    }
+  const areaSombreada = gerarAreaSombreada(pontosCurva, {
+    media,
+    desvio,
+    valor1,
+    valor2,
+    tipo,
+  });
+  if (areaSombreada.length > 0) {
+    datasets.push({
+      label: `Área = ${(probabilidade * 100).toFixed(4)}%`,
+      data: areaSombreada,
+      backgroundColor: "rgba(255, 99, 132, 0.5)",
+      borderColor: "rgba(255, 99, 132, 1)",
+      borderWidth: 1,
+      fill: "origin",
+      pointRadius: 0,
+    });
   }
 
-  myChart = new Chart(ctx, {
+  normalChart = new Chart(ctx, {
     type: "line",
-    data: {
-      datasets: datasets,
-    },
+    data: { datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
         x: {
           type: "linear",
-          position: "bottom",
-          title: {
-            display: true,
-            text: "Valor (X)",
-            color: "#000000",
-          },
-          ticks: {
-            color: "#000000",
-          },
-          grid: {
-            color: "rgba(255, 255, 255, 0.1)",
-          },
+          title: { display: true, text: "Valores (X)" },
         },
         y: {
           type: "linear",
-          title: {
-            display: true,
-            text: "Densidade de Probabilidade",
-            color: "#000000",
-          },
-          ticks: {
-            color: "#000000",
-          },
-          grid: {
-            color: "rgba(255, 255, 255, 0.1)",
-          },
           beginAtZero: true,
+          title: { display: true, text: "Densidade de Probabilidade" },
         },
       },
       plugins: {
-        legend: {
-          labels: {
-            color: "#000000",
-          },
-        },
+        legend: { position: "top" },
         tooltip: {
           callbacks: {
-            label: function (context) {
-              let label = context.dataset.label || "";
-              if (label) {
-                label += ": ";
-              }
-              if (context.parsed.y !== null) {
-                label += new Intl.NumberFormat("pt-BR", {
-                  minimumFractionDigits: 4,
-                  maximumFractionDigits: 4,
-                }).format(context.parsed.y);
-              }
-              return label;
-            },
+            label: (context) => `y: ${context.parsed.y.toFixed(4)}`,
           },
         },
       },
